@@ -75,13 +75,43 @@ class Generator(nn.Module):
         x = self.conv3(x)
         x = self.conv4(x)
         return x
+
+class SimpleDiscriminator(nn.Module):
+    def __init__(self, in_channels=4):
+        super(SimpleDiscriminator, self).__init__()
+        self.features = nn.Sequential(
+            # First convolution block
+            nn.Conv2d(in_channels, 64, kernel_size=3, stride=2, padding=1),
+            nn.LeakyReLU(0.2, inplace=True),
+            
+            # Second convolution block
+            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2, inplace=True),
+            
+            # Third convolution block
+            nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+        
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),  # Global pooling to reduce spatial dimensions to 1x1
+            nn.Flatten(),
+            nn.Linear(256, 1)         # Final linear layer to produce a single output
+        )
+        
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
     
 class Discriminator(nn.Module):
-    def __init__(self, num_conv_block=4, in_channels = 4):
+    def __init__(self, num_conv_block=2, in_channels = 4):
         super(Discriminator, self).__init__()
 
         block = []
-        out_channels = 64
+        out_channels = 8
 
         for _ in range(num_conv_block):
             block += [nn.ReflectionPad2d(1),
@@ -107,8 +137,8 @@ class Discriminator(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((512, 512))
 
         self.classification = nn.Sequential(
-            nn.Linear(73728, 100),
-            nn.Linear(100, 1)
+            nn.Linear(57600, 1),
+            nn.Sigmoid()
         )
 
     def forward(self, x):
